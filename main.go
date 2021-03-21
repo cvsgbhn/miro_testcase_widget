@@ -156,7 +156,8 @@ func readWidgetText(widget []byte) string {
 		panic(err)
 	}
 	widgetText := dat["text"].(string)
-	return widgetText
+	widgetTextFinal := widgetText[3:len(widgetText)-4]
+	return widgetTextFinal
 }
 
 ///////////////////////////////////////////////////////////////
@@ -218,6 +219,7 @@ func findNextNodes(allLines []line, currId int) []int {
 // 	if v.visited == false
 // 		DFS(G,v)
 
+// init() may be useful with multiple separated test trees on a map, for future development
 // init() {
 // For each u ∈ G
 // 	u.visited = false
@@ -225,39 +227,76 @@ func findNextNodes(allLines []line, currId int) []int {
 //    DFS(G, u)
 // }
 
-func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line) {
-	log.Printf("dfs starts for %d\n", theNode.nodeId)
+// func to write to a text file
+func writeToFile(nodesList []int) {
+	f, err := os.OpenFile("/tmp/testcase", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		f, err := os.Create("/tmp/testcase")
+		if err != nil && f == nil {
+			panic(err)
+		}
+	}
+	defer f.Close()
+	for i, node := range nodesList {
+		strNode := strconv.Itoa(node)
+		widgetInfo := getWidgetById(strNode)
+		widgetText := readWidgetText(widgetInfo)
+		if i == 0 {
+			log.Println(widgetText)
+			n3, err := f.WriteString(widgetText + "\n")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("wrote %d bytes\n", n3)
+			f.Sync()
+		} else {
+			log.Printf("%d. %s\n", i, widgetText)
+			sI := strconv.Itoa(i)
+			n3, err := f.WriteString(sI + ". " + widgetText + "\n")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("wrote %d bytes\n", n3)
+			f.Sync()
+		}
+	}
+}
+
+
+func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, path []int) {
+	path = append(path, theNode.nodeId)
+	//log.Printf("dfs starts for %d\n", theNode.nodeId)
 	if len(nextNodes) == 0 {
-		log.Printf("last leaf\n")
+		//log.Printf("last leaf\n")
+		//log.Println(path)
+		writeToFile(path)
 	}
 	theNode.visited = true
 	for _, next := range nextNodes {
 		for _, node := range allNodes {
 			if node.nodeId == next && node.visited == false {
-				log.Println(node)
+				//log.Println(node)
 				newNextNodes := findNextNodes(allLines, next)
-				dfs(newNextNodes, node, allNodes, allLines)
+				dfs(newNextNodes, node, allNodes, allLines, path)
 			}
 		}
 	}
-	log.Printf("dfs ends for %d\n", theNode.nodeId)
+	//log.Printf("dfs ends for %d\n", theNode.nodeId)
 }
 // 3. Upgrade dfs to write paths
 
-
-
-///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
 
 func main() {
 	allWidgetsBody := getWidgets("line")
 	allLines := parseLines(allWidgetsBody)
 	allNodes := findUniqueNodes(allLines)
-	log.Println(allNodes)
+	//log.Println(allNodes)
 	rootWidgetId := findRoot(allLines)
 	rootWidgetInfo := getWidgetById(strconv.Itoa(rootWidgetId))
 	readWidgetText(rootWidgetInfo)
 	newNodes := createNodes(allNodes, rootWidgetId)
-	log.Println(newNodes)
+	//log.Println(newNodes)
 	nextNodes := findNextNodes(allLines, rootWidgetId)
 	var rootNode wNode
 	for _, node := range newNodes {
@@ -266,7 +305,8 @@ func main() {
 			break
 		}
 	}
-	dfs(nextNodes, rootNode, newNodes, allLines)
+	path := make([]int, 0)
+	dfs(nextNodes, rootNode, newNodes, allLines, path)
 }
 
 
