@@ -190,8 +190,57 @@ func createNodes(uniqueNodes []int, rootId int) []wNode {
 	return nodes
 }
 
+// find next nodes for current node
+func findNextNodes(allLines []line, currId int) []int {
+	nextNodes := make([]int, 0)
+	for _, line := range allLines {
+		startNode, err := strconv.Atoi(line.startWidget)
+		if err != nil {
+			log.Println("findNextNodes: Atoi error s.w.")
+		}
+		if startNode == currId {
+			nextNode, err := strconv.Atoi(line.endWidget)
+			if err != nil {
+				log.Println("findNextNodes: Atoi error e.w.")
+			}
+			nextNodes = append(nextNodes, nextNode)
+		}
+	}
+	return nextNodes
+}
+
+
 // 2. Simple dfs
-func dfs(lines []line, nodes []wNode) {
+
+// DFS(G, u)
+// u.visited = true
+// for each v ∈ G.Adj[u]
+// 	if v.visited == false
+// 		DFS(G,v)
+
+// init() {
+// For each u ∈ G
+// 	u.visited = false
+//  For each u ∈ G
+//    DFS(G, u)
+// }
+
+func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line) {
+	log.Printf("dfs starts for %d\n", theNode.nodeId)
+	if len(nextNodes) == 0 {
+		log.Printf("last leaf\n")
+	}
+	theNode.visited = true
+	for _, next := range nextNodes {
+		for _, node := range allNodes {
+			if node.nodeId == next && node.visited == false {
+				log.Println(node)
+				newNextNodes := findNextNodes(allLines, next)
+				dfs(newNextNodes, node, allNodes, allLines)
+			}
+		}
+	}
+	log.Printf("dfs ends for %d\n", theNode.nodeId)
 }
 // 3. Upgrade dfs to write paths
 
@@ -209,6 +258,15 @@ func main() {
 	readWidgetText(rootWidgetInfo)
 	newNodes := createNodes(allNodes, rootWidgetId)
 	log.Println(newNodes)
+	nextNodes := findNextNodes(allLines, rootWidgetId)
+	var rootNode wNode
+	for _, node := range newNodes {
+		if node.nodeId == rootWidgetId {
+			rootNode = node
+			break
+		}
+	}
+	dfs(nextNodes, rootNode, newNodes, allLines)
 }
 
 
