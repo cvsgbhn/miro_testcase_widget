@@ -284,7 +284,7 @@ func addTestCase(allTestCases []testCase, nodesList []int) {
 }
 
 // DFS itself with writing to a file (to struct? in future)
-func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, nodesList []int, testCases &[]testCase) {
+func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, nodesList []int, testCases []testCase) {
 	nodesList = append(nodesList, theNode.nodeId)
 	//log.Printf("dfs starts for %d\n", theNode.nodeId)
 	if len(nextNodes) == 0 {
@@ -326,8 +326,9 @@ func initEverything() {
 		}
 	}
 	path := make([]int, 0)
-	testCases := make([]testCase, 0)
-	dfs(nextNodes, rootNode, newNodes, allLines, path, &testCases)
+	//testCases := make([]testCase, 0)
+	var testCases [0]testCase
+	dfs(nextNodes, rootNode, newNodes, allLines, path, testCases)
 	log.Println(testCases)
 }
 
