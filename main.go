@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"os"
 	"github.com/joho/godotenv"
+	"strings"
 )
 
 // to handle line type of widgets
@@ -23,6 +24,13 @@ type wNode struct {
 	nodeId int
 	visited bool
 	root bool
+}
+
+// to handle more flexible writing
+type testCase struct {
+	testCaseId int
+	schemaName string
+	testCaseText string
 }
 
 // get all widgets of specific type from specific board - actually, I have to do a part about specific board
@@ -230,7 +238,7 @@ func findNextNodes(allLines []line, currId int) []int {
 // }
 
 // func to write to a text file
-func writeToFile(nodesList []int) {
+func writeToFile(testCases []testCase) {
 	f, err := os.OpenFile("/tmp/testcase", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		f, err := os.Create("/tmp/testcase")
@@ -239,39 +247,51 @@ func writeToFile(nodesList []int) {
 		}
 	}
 	defer f.Close()
-	for i, node := range nodesList {
-		strNode := strconv.Itoa(node)
-		widgetInfo := getWidgetById(strNode)
-		widgetText := readWidgetText(widgetInfo)
-		if i == 0 {
-			log.Println(widgetText)
-			n3, err := f.WriteString(widgetText + "\n")
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("wrote %d bytes\n", n3)
-			f.Sync()
-		} else {
-			log.Printf("%d. %s\n", i, widgetText)
-			sI := strconv.Itoa(i)
-			n3, err := f.WriteString(sI + ". " + widgetText + "\n")
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("wrote %d bytes\n", n3)
-			f.Sync()
+	w, err := f.WriteString(testCases[0].schemaName + "\n")
+	fmt.Printf("wrote %d bytes\n", w)
+	for i, tCase := range testCases {
+		sI := strconv.Itoa(i)
+		n3, err := f.WriteString("Test Case #" + sI + "\n" + tCase.testCaseText + "\n")
+		if err != nil {
+			panic(err)
 		}
+		fmt.Printf("wrote %d bytes\n", n3)
+		f.Sync()
 	}
 }
 
+func addTestCase(allTestCases []testCase, nodesList []int) {
+
+	text := ""
+	for i, node := range nodesList {
+		strNode := strconv.Itoa(node)
+		widgetInfo := getWidgetById(strNode)
+		text = text + strconv.Itoa(i) + ". " + readWidgetText(widgetInfo) + "\n"
+	}
+	newCaseId := len(allTestCases) + 1
+	mainSchemaName := strings.Split(text, "\n")[0]
+	justTestCases := text[len(mainSchemaName):]
+	newTestCase := testCase{
+		testCaseId: newCaseId,
+		schemaName: mainSchemaName,
+		testCaseText: justTestCases,
+	}
+	log.Println("From TC struct:")
+	log.Println(newTestCase.testCaseId)
+	log.Println(newTestCase.schemaName)
+	log.Println(newTestCase.testCaseText)
+	allTestCases = append(allTestCases, newTestCase)
+}
+
 // DFS itself with writing to a file (to struct? in future)
-func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, path []int) {
-	path = append(path, theNode.nodeId)
+func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, nodesList []int, testCases &[]testCase) {
+	nodesList = append(nodesList, theNode.nodeId)
 	//log.Printf("dfs starts for %d\n", theNode.nodeId)
 	if len(nextNodes) == 0 {
 		//log.Printf("last leaf\n")
-		//log.Println(path)
-		writeToFile(path)
+		//writeToFile(nodesList)
+		log.Println(testCases)
+		addTestCase(testCases, nodesList)
 	}
 	theNode.visited = true
 	for _, next := range nextNodes {
@@ -279,7 +299,7 @@ func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, path
 			if node.nodeId == next && node.visited == false {
 				//log.Println(node)
 				newNextNodes := findNextNodes(allLines, next)
-				dfs(newNextNodes, node, allNodes, allLines, path)
+				dfs(newNextNodes, node, allNodes, allLines, nodesList, testCases)
 			}
 		}
 	}
@@ -306,7 +326,9 @@ func initEverything() {
 		}
 	}
 	path := make([]int, 0)
-	dfs(nextNodes, rootNode, newNodes, allLines, path)
+	testCases := make([]testCase, 0)
+	dfs(nextNodes, rootNode, newNodes, allLines, path, &testCases)
+	log.Println(testCases)
 }
 
 func main() {

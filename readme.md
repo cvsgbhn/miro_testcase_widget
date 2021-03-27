@@ -6,7 +6,7 @@ go run main.go
 ```
 
 ToDo:
-[] modify writing to have more possibilities
+[] modify writing to have more possibilities (writing function, interface, struct)
 [] find out how to identify a user, get a bearer token
 [] made an API from what I have 
 [] research google sheets API
