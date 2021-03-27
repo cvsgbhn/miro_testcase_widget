@@ -11,12 +11,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// to handle line type of widgets
 type line struct {
 	Id string
 	startWidget string
 	endWidget string
 }
 
+// to handle dfs nodes
+type wNode struct {
+	nodeId int
+	visited bool
+	root bool
+}
+
+// get all widgets of specific type from specific board - actually, I have to do a part about specific board
 func getWidgets(typeName string) []byte {
 	url := fmt.Sprintf("https://api.miro.com/v1/boards/o9J_lRePMUc=/widgets/?widgetType=%s", typeName)
 
@@ -54,6 +63,7 @@ func getWidgets(typeName string) []byte {
 	return []byte(body)
 }
 
+// parse json response from miro API to slice with line structs
 func parseLines(linesBytes []byte) []line {
 	var dat map[string]interface{}
  	if err := json.Unmarshal(linesBytes, &dat); err != nil {
@@ -72,6 +82,7 @@ func parseLines(linesBytes []byte) []line {
  	return allLines
  }
 
+ // to find distinct widget ids and write them to a slice
  func findUniqueNodes(lines []line) []int {
 	var nodes []int
 	for _, l := range lines {
@@ -97,6 +108,7 @@ func parseLines(linesBytes []byte) []line {
 	return finArr	
 }
 
+// to find (for now) one root, where dfs will start
 func findRoot(lines []line) int {
 	var startNodes []int
 	var endNodes []int
@@ -122,6 +134,7 @@ func findRoot(lines []line) int {
 	return 0
 }
 
+// to get specific widget by its id
 func getWidgetById(wId string) []byte {
 	url := fmt.Sprintf("https://api.miro.com/v1/boards/o9J_lRePMUc=/widgets/%s", wId)
 
@@ -150,6 +163,7 @@ func getWidgetById(wId string) []byte {
 	return []byte(body)
 }
 
+// to parse text part from a widget
 func readWidgetText(widget []byte) string {
 	var dat map[string]interface{}
 	if err := json.Unmarshal(widget, &dat); err != nil {
@@ -160,17 +174,7 @@ func readWidgetText(widget []byte) string {
 	return widgetTextFinal
 }
 
-///////////////////////////////////////////////////////////////
-//////////////////////// DFS //////////////////////////////////
- 
-// 1. Unique nodes to structs { nodeID int, visited bool, root bool} (array of structs)
-// a. Create struct wNode{}
-type wNode struct {
-	nodeId int
-	visited bool
-	root bool
-}
-// b. Create func (uniqueNodes []int, rootId int) []wNode
+// to create a list of nodes for dfs from widgets we've got from lines starts and ends
 func createNodes(uniqueNodes []int, rootId int) []wNode {
 	nodes := []wNode{}
 	for _, n := range uniqueNodes {
@@ -210,9 +214,7 @@ func findNextNodes(allLines []line, currId int) []int {
 	return nextNodes
 }
 
-
-// 2. Simple dfs
-
+// pseudocode to help myself
 // DFS(G, u)
 // u.visited = true
 // for each v ∈ G.Adj[u]
@@ -262,7 +264,7 @@ func writeToFile(nodesList []int) {
 	}
 }
 
-
+// DFS itself with writing to a file (to struct? in future)
 func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, path []int) {
 	path = append(path, theNode.nodeId)
 	//log.Printf("dfs starts for %d\n", theNode.nodeId)
@@ -283,11 +285,9 @@ func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, path
 	}
 	//log.Printf("dfs ends for %d\n", theNode.nodeId)
 }
-// 3. Upgrade dfs to write paths
 
-///////////////////////////////////////////////////////////
-
-func main() {
+// this was main
+func initEverything() {
 	allWidgetsBody := getWidgets("line")
 	allLines := parseLines(allWidgetsBody)
 	allNodes := findUniqueNodes(allLines)
@@ -307,6 +307,10 @@ func main() {
 	}
 	path := make([]int, 0)
 	dfs(nextNodes, rootNode, newNodes, allLines, path)
+}
+
+func main() {
+	initEverything()
 }
 
 
