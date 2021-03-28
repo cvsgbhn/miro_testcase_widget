@@ -33,6 +33,9 @@ type testCase struct {
 	testCaseText string
 }
 
+//////////////// MIRO AUTH /////////////////////
+
+////////////////////////////////////////////////
 // get all widgets of specific type from specific board - actually, I have to do a part about specific board
 func getWidgets(typeName string) []byte {
 	url := fmt.Sprintf("https://api.miro.com/v1/boards/o9J_lRePMUc=/widgets/?widgetType=%s", typeName)
@@ -247,11 +250,11 @@ func writeToFile(testCases []testCase) {
 		}
 	}
 	defer f.Close()
-	w, err := f.WriteString(testCases[0].schemaName + "\n")
+	w, err := f.WriteString(testCases[0].schemaName + "\n\n")
 	fmt.Printf("wrote %d bytes\n", w)
 	for i, tCase := range testCases {
-		sI := strconv.Itoa(i)
-		n3, err := f.WriteString("Test Case #" + sI + "\n" + tCase.testCaseText + "\n")
+		sI := strconv.Itoa(i+1)
+		n3, err := f.WriteString("Test Case #" + sI + tCase.testCaseText + "\n")
 		if err != nil {
 			panic(err)
 		}
@@ -260,15 +263,25 @@ func writeToFile(testCases []testCase) {
 	}
 }
 
-func addTestCase(allTestCases []testCase, nodesList []int) {
+//////////////////////// WRITE TO A GOOGLE SHEET /////////////////////////
+
+//func writeToGoogleSheet() {}
+//////////////////////////////////////////////////////////////////////////
+
+// to write one testcase to all pack of test cases
+func addTestCase(allTestCases *[]testCase, nodesList []int) {
 
 	text := ""
 	for i, node := range nodesList {
 		strNode := strconv.Itoa(node)
 		widgetInfo := getWidgetById(strNode)
-		text = text + strconv.Itoa(i) + ". " + readWidgetText(widgetInfo) + "\n"
+		if i == 0 {
+			text = readWidgetText(widgetInfo) + "\n"
+		} else {
+			text = text + strconv.Itoa(i) + ". " + readWidgetText(widgetInfo) + "\n"
+		}	
 	}
-	newCaseId := len(allTestCases) + 1
+	newCaseId := len(*allTestCases) + 1
 	mainSchemaName := strings.Split(text, "\n")[0]
 	justTestCases := text[len(mainSchemaName):]
 	newTestCase := testCase{
@@ -280,16 +293,15 @@ func addTestCase(allTestCases []testCase, nodesList []int) {
 	log.Println(newTestCase.testCaseId)
 	log.Println(newTestCase.schemaName)
 	log.Println(newTestCase.testCaseText)
-	allTestCases = append(allTestCases, newTestCase)
+	*allTestCases = append(*allTestCases, newTestCase)
 }
 
 // DFS itself with writing to a file (to struct? in future)
-func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, nodesList []int, testCases []testCase) {
+func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, nodesList []int, testCases *[]testCase) {
 	nodesList = append(nodesList, theNode.nodeId)
 	//log.Printf("dfs starts for %d\n", theNode.nodeId)
 	if len(nextNodes) == 0 {
 		//log.Printf("last leaf\n")
-		//writeToFile(nodesList)
 		log.Println(testCases)
 		addTestCase(testCases, nodesList)
 	}
@@ -326,10 +338,11 @@ func initEverything() {
 		}
 	}
 	path := make([]int, 0)
-	//testCases := make([]testCase, 0)
-	var testCases [0]testCase
-	dfs(nextNodes, rootNode, newNodes, allLines, path, testCases)
+	testCases := make([]testCase, 0)
+	//var testCases [0]testCase
+	dfs(nextNodes, rootNode, newNodes, allLines, path, &testCases)
 	log.Println(testCases)
+	writeToFile(testCases)
 }
 
 func main() {
