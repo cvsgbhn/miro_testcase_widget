@@ -11,3 +11,5 @@ ToDo:
 [] made an API from what I have 
 [] research google sheets API
 [] add writing to google sheet
+
+Note: gofmt is really handy to keep code beautiful

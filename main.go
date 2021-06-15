@@ -1,75 +1,76 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"io/ioutil"
-	"encoding/json"
-	"strconv"
 	"os"
-	"github.com/joho/godotenv"
+	"strconv"
 	"strings"
 )
 
 // to handle line type of widgets
 type line struct {
-	Id string
+	Id          string
 	startWidget string
-	endWidget string
+	endWidget   string
 }
 
 // to handle dfs nodes
 type wNode struct {
-	nodeId int
+	nodeId  int
 	visited bool
-	root bool
+	root    bool
 }
 
 // to handle more flexible writing
 type testCase struct {
-	testCaseId int
-	schemaName string
+	testCaseId   int
+	schemaName   string
 	testCaseText string
 }
 
 //////////////// MIRO AUTH /////////////////////
 
 ////////////////////////////////////////////////
+
 // get all widgets of specific type from specific board - actually, I have to do a part about specific board
-func getWidgets(typeName string) []byte {
-	url := fmt.Sprintf("https://api.miro.com/v1/boards/o9J_lRePMUc=/widgets/?widgetType=%s", typeName)
+func getWidgets(typeName string, boardId string) []byte {
+	url := fmt.Sprintf("https://api.miro.com/v1/boards/%s/widgets/?widgetType=%s", boardId, typeName)
 
 	// Create a Bearer string by appending string access token
 	if err := godotenv.Load(".env"); err != nil {
-        log.Print("No .env file found")
-    }
+		log.Print("No .env file found")
+	}
 	token, exist := os.LookupEnv("BEARER")
 	log.Println("token " + token)
 	if exist == false {
 		log.Println("missing token")
 		return nil
 	}
-    var bearer = "Bearer " + token
+	var bearer = "Bearer " + token
 
-    // Create a new request using http
-    req, err := http.NewRequest("GET", url, nil)
+	// Create a new request using http
+	req, err := http.NewRequest("GET", url, nil)
 
-    // add authorization header to the req
-    req.Header.Add("Authorization", bearer)
+	// add authorization header to the req
+	req.Header.Add("Authorization", bearer)
 
-    // Send req using http Client
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Println("Error on response.\n[ERROR] -", err)
-    }
-    defer resp.Body.Close()
+	// Send req using http Client
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Error on response.\n[ERROR] -", err)
+	}
+	defer resp.Body.Close()
 
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        log.Println("Error while reading the response bytes:", err)
-    }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error while reading the response bytes:", err)
+	}
 
 	return []byte(body)
 }
@@ -77,24 +78,24 @@ func getWidgets(typeName string) []byte {
 // parse json response from miro API to slice with line structs
 func parseLines(linesBytes []byte) []line {
 	var dat map[string]interface{}
- 	if err := json.Unmarshal(linesBytes, &dat); err != nil {
- 		panic(err)
- 	}
+	if err := json.Unmarshal(linesBytes, &dat); err != nil {
+		panic(err)
+	}
 
 	allLines := []line{}
 
-	for _,item:=range dat["data"].([]interface{}) {
+	for _, item := range dat["data"].([]interface{}) {
 		theLine := line{
-			Id: item.(map[string]interface{})["id"].(string),
-			startWidget: (item.(map[string]interface{})["startWidget"]).(map[string]interface {})["id"].(string),
-			endWidget: item.(map[string]interface{})["endWidget"].(map[string]interface {})["id"].(string)}
+			Id:          item.(map[string]interface{})["id"].(string),
+			startWidget: (item.(map[string]interface{})["startWidget"]).(map[string]interface{})["id"].(string),
+			endWidget:   item.(map[string]interface{})["endWidget"].(map[string]interface{})["id"].(string)}
 		allLines = append(allLines, theLine)
 	}
- 	return allLines
- }
+	return allLines
+}
 
- // to find distinct widget ids and write them to a slice
- func findUniqueNodes(lines []line) []int {
+// to find distinct widget ids and write them to a slice
+func findUniqueNodes(lines []line) []int {
 	var nodes []int
 	for _, l := range lines {
 		oneNode, err := strconv.Atoi(l.startWidget)
@@ -116,7 +117,7 @@ func parseLines(linesBytes []byte) []line {
 			finArr = append(finArr, val)
 		}
 	}
-	return finArr	
+	return finArr
 }
 
 // to find (for now) one root, where dfs will start
@@ -150,26 +151,26 @@ func getWidgetById(wId string) []byte {
 	url := fmt.Sprintf("https://api.miro.com/v1/boards/o9J_lRePMUc=/widgets/%s", wId)
 
 	// Create a Bearer string by appending string access token
-    var bearer = "Bearer " + "EJrhSsVARKZUzy1ipm1-P9L2d2c"
+	var bearer = "Bearer " + "EJrhSsVARKZUzy1ipm1-P9L2d2c"
 
-    // Create a new request using http
-    req, err := http.NewRequest("GET", url, nil)
+	// Create a new request using http
+	req, err := http.NewRequest("GET", url, nil)
 
-    // add authorization header to the req
-    req.Header.Add("Authorization", bearer)
+	// add authorization header to the req
+	req.Header.Add("Authorization", bearer)
 
-    // Send req using http Client
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Println("Error on response.\n[ERROR] -", err)
-    }
-    defer resp.Body.Close()
+	// Send req using http Client
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Error on response.\n[ERROR] -", err)
+	}
+	defer resp.Body.Close()
 
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        log.Println("Error while reading the response bytes:", err)
-    }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error while reading the response bytes:", err)
+	}
 
 	return []byte(body)
 }
@@ -181,7 +182,7 @@ func readWidgetText(widget []byte) string {
 		panic(err)
 	}
 	widgetText := dat["text"].(string)
-	widgetTextFinal := widgetText[3:len(widgetText)-4]
+	widgetTextFinal := widgetText[3 : len(widgetText)-4]
 	return widgetTextFinal
 }
 
@@ -192,14 +193,14 @@ func createNodes(uniqueNodes []int, rootId int) []wNode {
 		theNode := wNode{}
 		if n == rootId {
 			theNode = wNode{
-				nodeId: n,
+				nodeId:  n,
 				visited: false,
-				root: true}
+				root:    true}
 		} else {
 			theNode = wNode{
-				nodeId: n,
+				nodeId:  n,
 				visited: false,
-				root: false}
+				root:    false}
 		}
 		nodes = append(nodes, theNode)
 	}
@@ -253,7 +254,7 @@ func writeToFile(testCases []testCase) {
 	w, err := f.WriteString(testCases[0].schemaName + "\n\n")
 	fmt.Printf("wrote %d bytes\n", w)
 	for i, tCase := range testCases {
-		sI := strconv.Itoa(i+1)
+		sI := strconv.Itoa(i + 1)
 		n3, err := f.WriteString("Test Case #" + sI + tCase.testCaseText + "\n")
 		if err != nil {
 			panic(err)
@@ -263,7 +264,7 @@ func writeToFile(testCases []testCase) {
 	}
 }
 
-//////////////////////// WRITE TO A GOOGLE SHEET /////////////////////////
+//////////////////////// WRITE TO A GOOGLE SHEET ///////////////////////
 
 //func writeToGoogleSheet() {}
 //////////////////////////////////////////////////////////////////////////
@@ -279,14 +280,14 @@ func addTestCase(allTestCases *[]testCase, nodesList []int) {
 			text = readWidgetText(widgetInfo) + "\n"
 		} else {
 			text = text + strconv.Itoa(i) + ". " + readWidgetText(widgetInfo) + "\n"
-		}	
+		}
 	}
 	newCaseId := len(*allTestCases) + 1
 	mainSchemaName := strings.Split(text, "\n")[0]
 	justTestCases := text[len(mainSchemaName):]
 	newTestCase := testCase{
-		testCaseId: newCaseId,
-		schemaName: mainSchemaName,
+		testCaseId:   newCaseId,
+		schemaName:   mainSchemaName,
 		testCaseText: justTestCases,
 	}
 	log.Println("From TC struct:")
@@ -320,7 +321,7 @@ func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, node
 
 // this was main
 func initEverything() {
-	allWidgetsBody := getWidgets("line")
+	allWidgetsBody := getWidgets("line", "o9J_lRePMUc=")
 	allLines := parseLines(allWidgetsBody)
 	allNodes := findUniqueNodes(allLines)
 	//log.Println(allNodes)
@@ -348,5 +349,3 @@ func initEverything() {
 func main() {
 	initEverything()
 }
-
-
