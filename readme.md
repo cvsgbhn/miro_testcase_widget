@@ -7,6 +7,7 @@ go run main.go
 
 ToDo:
 - [X] parse multiple schemas on one board 
+- [ ] choose board on cli tag (--board or smth like that)
 - [ ] work on envs
 - [ ] modify writing to have more possibilities (writing function, interface, struct)
 - [ ] find out how to identify a user, get a bearer token
