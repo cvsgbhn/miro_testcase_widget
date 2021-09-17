@@ -141,13 +141,8 @@ func findRoot(lines []line) (roots []int) {
 		flag := 0
 		for _, ed := range endNodes {
 			if sd == ed {
-				fmt.Println("start:")
-			fmt.Println(sd)
-			fmt.Println("end:")
-			fmt.Println(ed)
 				flag++
 			}
-			fmt.Printf("flag %d\n", flag)
 		}
 		if flag == 0 {
 			roots = append(roots, sd)
@@ -167,8 +162,7 @@ func findRoot(lines []line) (roots []int) {
 	for _, i := range finArr {
 		fmt.Println("Roots info:")
 		fmt.Println(string(getWidgetById(strconv.Itoa(i))))
-	} 
-	panic("qwerty")
+	}
 	return roots
 }
 
@@ -361,6 +355,8 @@ func dfs(nextNodes []int, theNode wNode, allNodes []wNode, allLines []line, node
 // this was main
 func initEverything() {
 	allWidgetsBody := getWidgets("line", "o9J_lRePMUc=")
+	//allWidgetsBody := getWidgets("arrow", "o9J_lRePMUc=")
+	fmt.Println(string(allWidgetsBody))
 	allLines := parseLines(allWidgetsBody)
 	allNodes := findUniqueNodes(allLines)
 	//log.Println(allNodes)

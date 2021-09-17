@@ -6,10 +6,8 @@ go run main.go
 ```
 
 ToDo:
-[] modify writing to have more possibilities (writing function, interface, struct)
-[] find out how to identify a user, get a bearer token
-[] made an API from what I have 
-[] research google sheets API
-[] add writing to google sheet
-
-Note: gofmt is really handy to keep code beautiful
+- [] work on envs
+- [] modify writing to have more possibilities (writing function, interface, struct)
+- [] find out how to identify a user, get a bearer token
+- [] add writing to google sheet
+- [] add writing to testrail
