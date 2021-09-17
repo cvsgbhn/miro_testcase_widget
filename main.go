@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // to handle line type of widgets
@@ -121,7 +122,7 @@ func findUniqueNodes(lines []line) []int {
 }
 
 // to find (for now) one root, where dfs will start
-func findRoot(lines []line) int {
+func findRoot(lines []line) (roots []int) {
 	var startNodes []int
 	var endNodes []int
 	for _, l := range lines {
@@ -137,13 +138,38 @@ func findRoot(lines []line) int {
 		endNodes = append(endNodes, oneNode)
 	}
 	for _, sd := range startNodes {
+		flag := 0
 		for _, ed := range endNodes {
-			if sd != ed {
-				return sd
+			if sd == ed {
+				fmt.Println("start:")
+			fmt.Println(sd)
+			fmt.Println("end:")
+			fmt.Println(ed)
+				flag++
 			}
+			fmt.Printf("flag %d\n", flag)
+		}
+		if flag == 0 {
+			roots = append(roots, sd)
 		}
 	}
-	return 0
+	finArr := make([]int, 0, len(roots))
+	mappedArr := make(map[int]bool)
+	for _, val := range roots {
+		if _, ok := mappedArr[val]; !ok {
+			mappedArr[val] = true
+			finArr = append(finArr, val)
+		}
+	}
+	fmt.Println("roots")
+	fmt.Println(finArr)
+	// temp
+	for _, i := range finArr {
+		fmt.Println("Roots info:")
+		fmt.Println(string(getWidgetById(strconv.Itoa(i))))
+	} 
+	panic("qwerty")
+	return roots
 }
 
 // to get specific widget by its id
@@ -170,6 +196,10 @@ func getWidgetById(wId string) []byte {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Error while reading the response bytes:", err)
+	}
+
+	if resp.Status == "429 Too Many Requests" {
+		return nil
 	}
 
 	return []byte(body)
@@ -243,15 +273,20 @@ func findNextNodes(allLines []line, currId int) []int {
 
 // func to write to a text file
 func writeToFile(testCases []testCase) {
+	fmt.Println("1")
 	f, err := os.OpenFile("/tmp/testcase", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	fmt.Println("2")
 	if err != nil {
 		f, err := os.Create("/tmp/testcase")
 		if err != nil && f == nil {
 			panic(err)
 		}
 	}
+	fmt.Println("3")
 	defer f.Close()
+	fmt.Println("4")
 	w, err := f.WriteString(testCases[0].schemaName + "\n\n")
+	fmt.Println("5")
 	fmt.Printf("wrote %d bytes\n", w)
 	for i, tCase := range testCases {
 		sI := strconv.Itoa(i + 1)
@@ -276,6 +311,10 @@ func addTestCase(allTestCases *[]testCase, nodesList []int) {
 	for i, node := range nodesList {
 		strNode := strconv.Itoa(node)
 		widgetInfo := getWidgetById(strNode)
+		if widgetInfo == nil {
+			time.Sleep(60 * time.Second)
+			widgetInfo = getWidgetById(strNode)
+		}
 		if i == 0 {
 			text = readWidgetText(widgetInfo) + "\n"
 		} else {
@@ -325,24 +364,26 @@ func initEverything() {
 	allLines := parseLines(allWidgetsBody)
 	allNodes := findUniqueNodes(allLines)
 	//log.Println(allNodes)
-	rootWidgetId := findRoot(allLines)
-	rootWidgetInfo := getWidgetById(strconv.Itoa(rootWidgetId))
-	readWidgetText(rootWidgetInfo)
-	newNodes := createNodes(allNodes, rootWidgetId)
-	//log.Println(newNodes)
-	nextNodes := findNextNodes(allLines, rootWidgetId)
-	var rootNode wNode
-	for _, node := range newNodes {
-		if node.nodeId == rootWidgetId {
-			rootNode = node
-			break
-		}
-	}
-	path := make([]int, 0)
+	allRootWidgetsId := findRoot(allLines)
 	testCases := make([]testCase, 0)
-	//var testCases [0]testCase
-	dfs(nextNodes, rootNode, newNodes, allLines, path, &testCases)
-	log.Println(testCases)
+	for _, root := range allRootWidgetsId {
+		rootWidgetInfo := getWidgetById(strconv.Itoa(root))
+		readWidgetText(rootWidgetInfo)
+		newNodes := createNodes(allNodes, root)
+		//log.Println(newNodes)
+		nextNodes := findNextNodes(allLines, root)
+		var rootNode wNode
+		for _, node := range newNodes {
+			if node.nodeId == root {
+				rootNode = node
+				break
+			}
+		}
+		path := make([]int, 0)
+		//var testCases [0]testCase
+		dfs(nextNodes, rootNode, newNodes, allLines, path, &testCases)
+	}
+	//log.Println(testCases)
 	writeToFile(testCases)
 }
 
